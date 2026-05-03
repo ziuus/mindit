@@ -101,18 +101,19 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 
+# AI Safety (Gemini 1.5 Flash)
+# Get a free key at https://aistudio.google.com/app/apikey
+GEMINI_API_KEY=
+
 # Phase 2+ (Blockchain)
 NEXT_PUBLIC_ALCHEMY_ID=
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=
-
-# Phase 3+ (NLP service)
-NLP_SERVICE_URL=
 
 # Phase 3+ (OpenAI for Reflect journal)
 OPENAI_API_KEY=
 ```
 
-> Phase 1 runs entirely without environment variables using an in-memory store and keyword-based safety.
+> Phase 1 can run entirely without environment variables using an in-memory store and keyword-based safety. Supabase + Gemini are needed for production.
 
 ---
 
@@ -120,10 +121,11 @@ OPENAI_API_KEY=
 
 | Route | Description |
 |---|---|
-| `/` | Landing — animated hero with floating orbs |
-| `/feed` | Anonymous post feed with mood + category filters |
-| `/compose` | Full-screen writing composer (mobile) |
-| `/post/[id]` | Single post view + resonance count |
+| `/` | Landing — conversion-optimised animated hero with rotating prompts |
+| `/feed` | Anonymous post feed with mood + category filters (Realtime updates) |
+| `/compose` | Full-screen writing composer with AI Safety Check |
+| `/pulse` | Live data dashboard showing India's anonymous mood |
+| `/post/[id]` | Single post view + dynamic OG share cards |
 | `/profile` | Private vault — your posts + mood chart |
 | `/reflect` | Private AI reflection journal |
 
@@ -150,15 +152,13 @@ Every post passes through a 4-tier pipeline before publishing:
 
 ## 🗓️ Roadmap
 
-### ✅ Phase 1 — MVP (Complete)
-- Anonymous pseudonym onboarding
-- Post composer with mood + category tags
-- Feed with filters and resonance
-- Keyword-based safety pipeline
-- Crisis intervention UI (banner + modal)
-- Private vault + mood chart
-- Reflection journal with AI prompts
-- Mobile-first layout
+### ✅ Phase 1.5 — Production & Scale (Complete)
+- Supabase Postgres persistence + Realtime feed
+- Gemini 1.5 Flash AI Safety Pipeline (hybrid with local fallback)
+- Live "Pulse" data dashboard (`/pulse`)
+- Dynamic OG Share Cards (`next/og`)
+- Downloadable/Shareable Mood Cards via `html-to-image`
+- Growth-optimised landing page
 
 ### 🔜 Phase 2 — Web3 Layer
 - Wallet connect (Wagmi + RainbowKit)
