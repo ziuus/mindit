@@ -130,6 +130,25 @@ export async function getUserResonanceCounts(userId: string): Promise<Record<str
   return Object.fromEntries(data.map((p: any) => [p.id, p.resonance_count || 0]));
 }
 
+export async function getFlaggedPosts(): Promise<Post[]> {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*')
+    .in('safety_tier', ['hold', 'crisis'])
+    .order('created_at', { ascending: false });
+
+  if (error) return [];
+  return (data || []).map(mapDbPostToPost);
+}
+
+export async function deletePost(id: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('posts')
+    .delete()
+    .eq('id', id);
+  return !error;
+}
+
 
 function mapDbPostToPost(dbPost: any): Post {
   return {
