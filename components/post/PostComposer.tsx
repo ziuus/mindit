@@ -5,6 +5,7 @@ import { X, Heart, AlertTriangle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getOrCreateUser } from '@/lib/anonymity';
 import { analyzeSafety, SafetyTier } from '@/lib/safety';
+import { analyzeContentSafety } from '@/lib/safetyAsync';
 import { addPost } from '@/lib/store';
 import CrisisBanner from '@/components/safety/CrisisBanner';
 import SafetyModal from '@/components/safety/SafetyModal';
@@ -40,6 +41,7 @@ export default function PostComposer({ onClose, fullPage = false, initialPrompt 
   const [showSafetyModal, setShowSafetyModal] = useState(false);
   const [pendingPost, setPendingPost] = useState<any>(null);
   const [isSending, setIsSending] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -49,9 +51,11 @@ export default function PostComposer({ onClose, fullPage = false, initialPrompt 
   }, []);
 
   const handleSubmit = async () => {
-    if (!content.trim() || !selectedMood || !selectedCategory || isSending) return;
+    if (!content.trim() || !selectedMood || !selectedCategory || isSending || isAnalyzing) return;
 
-    const safety = analyzeSafety(content);
+    setIsAnalyzing(true);
+    const safety = await analyzeContentSafety(content);
+    setIsAnalyzing(false);
     const user = getOrCreateUser();
 
     const post = {
@@ -258,18 +262,29 @@ export default function PostComposer({ onClose, fullPage = false, initialPrompt 
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <button
               onClick={handleSubmit}
-              disabled={!content.trim() || !selectedMood || !selectedCategory || isSending}
+              disabled={!content.trim() || !selectedMood || !selectedCategory || isSending || isAnalyzing}
               className="btn-primary"
               style={{
                 flex: 1,
-                opacity: !content.trim() || !selectedMood || !selectedCategory || isSending ? 0.5 : 1,
-                cursor: !content.trim() || !selectedMood || !selectedCategory || isSending ? 'not-allowed' : 'pointer',
+                opacity: !content.trim() || !selectedMood || !selectedCategory || isSending || isAnalyzing ? 0.6 : 1,
+                cursor: !content.trim() || !selectedMood || !selectedCategory || isSending || isAnalyzing ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               }}
             >
-              <Heart size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-              {isSending ? 'Sending...' : 'Share this'}
+              {isAnalyzing ? (
+                <>
+                  <span style={{ width: '14px', height: '14px', border: '2px solid rgba(10,15,20,0.3)', borderTop: '2px solid #0a0f14', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
+                  Checking safety...
+                </>
+              ) : (
+                <>
+                  <Heart size={16} />
+                  {isSending ? 'Sending...' : 'Share this'}
+                </>
+              )}
             </button>
           </div>
+
         </div>
       </div>
 
