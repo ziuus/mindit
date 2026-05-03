@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { PenLine, Hash, TrendingUp, Clock } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { PenLine, Hash, TrendingUp, Clock, ArrowUp } from 'lucide-react';
 import { getPosts, getTrendingPosts } from '@/lib/store';
 import { getOrCreateUser } from '@/lib/anonymity';
+import { createClient } from '@/utils/supabase/client';
 import PostCard from '@/components/post/PostCard';
 import PostComposer from '@/components/post/PostComposer';
 import DailyPrompt from '@/components/feed/DailyPrompt';
@@ -26,10 +27,42 @@ export default function FeedPage() {
   const [showComposer, setShowComposer] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [newPostsBanner, setNewPostsBanner] = useState(false);
+  const topRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setUser(getOrCreateUser());
   }, []);
+
+  // Supabase Realtime: listen for new posts
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel('public:posts')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => {
+        // Only show banner if user isn't already at top of page
+        if (window.scrollY > 200) {
+          setNewPostsBanner(true);
+        } else {
+          // Auto-refresh if they're already at top
+          refreshPosts();
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  const refreshPosts = async () => {
+    const data = await getPosts({ category: selectedCategory, mood: selectedMood });
+    setPosts(data);
+    setNewPostsBanner(false);
+  };
+
+  const handleNewPostsBanner = () => {
+    topRef.current?.scrollIntoView({ behavior: 'smooth' });
+    refreshPosts();
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -59,6 +92,39 @@ export default function FeedPage() {
 
   return (
     <div style={{ maxWidth: '680px', margin: '0 auto', padding: '20px' }}>
+      <div ref={topRef} />
+
+      {/* New posts banner — Realtime */}
+      <AnimatePresence>
+        {newPostsBanner && (
+          <motion.button
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            onClick={handleNewPostsBanner}
+            style={{
+              width: '100%',
+              marginBottom: '16px',
+              padding: '12px 20px',
+              borderRadius: '12px',
+              border: '1px solid rgba(127, 182, 154, 0.3)',
+              background: 'rgba(127, 182, 154, 0.08)',
+              color: '#7fb69a',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: 500,
+              fontFamily: "'Inter', sans-serif",
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+            }}
+          >
+            <ArrowUp size={14} />
+            New posts — tap to refresh
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Daily Prompt */}
       <DailyPrompt />
