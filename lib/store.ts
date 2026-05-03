@@ -105,6 +105,32 @@ export async function getUserPosts(userId: string): Promise<Post[]> {
   return (data || []).map(mapDbPostToPost);
 }
 
+/** Returns posts sorted by resonance_count in last 48h */
+export async function getTrendingPosts(): Promise<Post[]> {
+  const cutoff = new Date(Date.now() - 48 * 3600 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*')
+    .gte('created_at', cutoff)
+    .order('resonance_count', { ascending: false })
+    .limit(20);
+
+  if (error) return [];
+  return (data || []).map(mapDbPostToPost);
+}
+
+/** Returns resonance count for a user's posts - used to detect new resonances */
+export async function getUserResonanceCounts(userId: string): Promise<Record<string, number>> {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('id, resonance_count')
+    .eq('user_id', userId);
+
+  if (error || !data) return {};
+  return Object.fromEntries(data.map((p: any) => [p.id, p.resonance_count || 0]));
+}
+
+
 function mapDbPostToPost(dbPost: any): Post {
   return {
     id: dbPost.id,

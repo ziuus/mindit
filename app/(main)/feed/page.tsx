@@ -2,52 +2,55 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { PenLine, Hash, Heart } from 'lucide-react';
-import { getPosts } from '@/lib/store';
+import { PenLine, Hash, TrendingUp, Clock } from 'lucide-react';
+import { getPosts, getTrendingPosts } from '@/lib/store';
 import { getOrCreateUser } from '@/lib/anonymity';
 import PostCard from '@/components/post/PostCard';
 import PostComposer from '@/components/post/PostComposer';
+import DailyPrompt from '@/components/feed/DailyPrompt';
+import ResonanceNotification from '@/components/feed/ResonanceNotification';
 
 const CATEGORIES = ['all', 'vent', 'secret', 'confession', 'unsent-letter', 'gratitude'];
 const MOODS = ['all', 'numb', 'heavy', 'frustrated', 'scared', 'hopeful'];
+const MOOD_EMOJIS: Record<string, string> = {
+  all: '✨', numb: '😶', heavy: '😔', frustrated: '😤', scared: '😰', hopeful: '🤍',
+};
+
+type SortMode = 'recent' | 'trending';
 
 export default function FeedPage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedMood, setSelectedMood] = useState('all');
+  const [sortMode, setSortMode] = useState<SortMode>('recent');
   const [showComposer, setShowComposer] = useState(false);
   const [user, setUser] = useState<any>(null);
-
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
-      setUser(getOrCreateUser());
-      const data = await getPosts();
-      setPosts(data);
-      setLoading(false);
-    };
-    load();
+    setUser(getOrCreateUser());
   }, []);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const data = await getPosts({
-        category: selectedCategory,
-        mood: selectedMood,
-      });
+      let data;
+      if (sortMode === 'trending') {
+        data = await getTrendingPosts();
+        // Apply client-side filters on top of trending
+        if (selectedCategory !== 'all') data = data.filter((p: any) => p.category === selectedCategory);
+        if (selectedMood !== 'all') data = data.filter((p: any) => p.mood === selectedMood);
+      } else {
+        data = await getPosts({ category: selectedCategory, mood: selectedMood });
+      }
       setPosts(data);
       setLoading(false);
     };
     load();
-  }, [selectedCategory, selectedMood]);
+  }, [selectedCategory, selectedMood, sortMode]);
 
   const handlePostAdded = async () => {
-    const data = await getPosts({
-      category: selectedCategory,
-      mood: selectedMood,
-    });
+    const data = await getPosts({ category: selectedCategory, mood: selectedMood });
     setPosts(data);
     setShowComposer(false);
   };
@@ -56,6 +59,47 @@ export default function FeedPage() {
 
   return (
     <div style={{ maxWidth: '680px', margin: '0 auto', padding: '20px' }}>
+
+      {/* Daily Prompt */}
+      <DailyPrompt />
+
+      {/* Sort toggle */}
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        marginBottom: '20px',
+        background: 'var(--bg-glass)',
+        borderRadius: '12px',
+        padding: '4px',
+        border: '1px solid var(--border)',
+        width: 'fit-content',
+      }}>
+        {([['recent', 'Recent', Clock], ['trending', 'Trending', TrendingUp]] as const).map(([mode, label, Icon]) => (
+          <button
+            key={mode}
+            onClick={() => setSortMode(mode)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 16px',
+              borderRadius: '9px',
+              border: 'none',
+              background: sortMode === mode ? 'rgba(127, 182, 154, 0.15)' : 'transparent',
+              color: sortMode === mode ? '#7fb69a' : '#6b7a8d',
+              cursor: 'pointer',
+              fontSize: '13px',
+              fontWeight: sortMode === mode ? 600 : 400,
+              transition: 'all 0.2s ease',
+              fontFamily: "'Inter', sans-serif",
+            }}
+          >
+            <Icon size={14} />
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* Filter bar */}
       <div style={{ marginBottom: '24px' }}>
         <div style={{
@@ -64,6 +108,7 @@ export default function FeedPage() {
           overflowX: 'auto',
           paddingBottom: '12px',
           marginBottom: '12px',
+          scrollbarWidth: 'none',
         }}>
           {CATEGORIES.map(cat => (
             <button
@@ -94,6 +139,7 @@ export default function FeedPage() {
           gap: '8px',
           overflowX: 'auto',
           paddingBottom: '8px',
+          scrollbarWidth: 'none',
         }}>
           {MOODS.map(mood => (
             <button
@@ -113,34 +159,53 @@ export default function FeedPage() {
                 fontFamily: "'Inter', sans-serif",
               }}
             >
+              <span style={{ marginRight: '4px' }}>{MOOD_EMOJIS[mood]}</span>
               {mood}
             </button>
           ))}
         </div>
       </div>
 
+      {/* Trending label */}
+      {sortMode === 'trending' && !loading && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          style={{
+            color: '#6b7a8d',
+            fontSize: '12px',
+            fontFamily: "'JetBrains Mono', monospace",
+            marginBottom: '16px',
+            letterSpacing: '0.5px',
+          }}
+        >
+          🔥 Most resonated in the last 48 hours
+        </motion.p>
+      )}
+
       {/* Posts */}
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {[1, 2, 3].map(i => (
-            <div key={i} className="glass" style={{ height: '160px', width: '100%', opacity: 0.5 }} />
+            <motion.div
+              key={i}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0.3, 0.5, 0.3] }}
+              transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.15 }}
+              className="glass"
+              style={{ height: '160px', width: '100%' }}
+            />
           ))}
         </div>
       ) : posts.length === 0 ? (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '80px 20px',
-            animation: 'breathe 4s ease-in-out infinite',
-          }}
-        >
+        <div style={{ textAlign: 'center', padding: '80px 20px', animation: 'breathe 4s ease-in-out infinite' }}>
           <p style={{
             fontFamily: "'Playfair Display', serif",
             fontSize: '20px',
             color: '#a8b5c4',
             marginBottom: '8px',
           }}>
-            Be the first to speak.
+            {sortMode === 'trending' ? 'Nothing trending yet.' : 'Be the first to speak.'}
           </p>
           <p style={{ color: '#6b7a8d', fontSize: '14px' }}>
             Your words might help someone else feel less alone.
@@ -153,7 +218,7 @@ export default function FeedPage() {
               key={post.id}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: index * 0.08 }}
+              transition={{ duration: 0.4, delay: index * 0.06 }}
             >
               <PostCard post={post} currentUserId={user.id} />
             </motion.div>
@@ -195,8 +260,11 @@ export default function FeedPage() {
         <PenLine size={24} />
       </button>
 
+      {/* Resonance notification toast */}
+      <ResonanceNotification />
+
       {showComposer && (
-        <PostComposer onClose={() => setShowComposer(false)} />
+        <PostComposer onClose={handlePostAdded} />
       )}
     </div>
   );

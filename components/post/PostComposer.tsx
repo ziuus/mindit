@@ -28,11 +28,12 @@ const CATEGORIES = [
 interface PostComposerProps {
   onClose?: () => void;
   fullPage?: boolean;
+  initialPrompt?: string;
 }
 
-export default function PostComposer({ onClose, fullPage = false }: PostComposerProps) {
+export default function PostComposer({ onClose, fullPage = false, initialPrompt }: PostComposerProps) {
   const router = useRouter();
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState(initialPrompt ? `${initialPrompt}\n\n` : '');
   const [selectedMood, setSelectedMood] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showCrisisBanner, setShowCrisisBanner] = useState(false);
