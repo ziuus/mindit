@@ -3,6 +3,7 @@ import { analyzeSafety } from '@/lib/safety';
 import type { SafetyTier } from '@/lib/safety';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const CRISIS_WEBHOOK_URL = process.env.CRISIS_WEBHOOK_URL; // Partner webhook (e.g. iCall / Vandrevala)
 
 const SYSTEM_PROMPT = `You are a compassionate mental health safety analyst for Mindit, an anonymous mental health platform for India.
 
@@ -99,6 +100,22 @@ export async function POST(req: NextRequest) {
   const keywordIdx = TIER_ORDER.indexOf(keywordResult.tier);
   const aiIdx = TIER_ORDER.indexOf(aiResult.tier);
   const finalTier = TIER_ORDER[Math.max(keywordIdx, aiIdx)];
+
+  // Phase 3 Intelligence: Webhook Integration for Crisis Escalation
+  if (finalTier === 'crisis' && CRISIS_WEBHOOK_URL) {
+    // Fire and forget webhook to partner orgs
+    fetch(CRISIS_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'crisis_detected',
+        timestamp: new Date().toISOString(),
+        content_snippet: content.length > 100 ? content.substring(0, 97) + '...' : content,
+        ai_reason: aiResult.reason,
+        confidence: aiResult.confidence,
+      }),
+    }).catch(err => console.error('Crisis webhook failed:', err));
+  }
 
   return NextResponse.json({
     tier: finalTier,
