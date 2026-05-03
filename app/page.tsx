@@ -1,65 +1,176 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import OnboardFlow from '@/components/onboarding/OnboardFlow';
 
 export default function Home() {
+  const [showOnboard, setShowOnboard] = useState(false);
+
+  useEffect(() => {
+    const onboarded = localStorage.getItem('mindit_onboarded');
+    if (!onboarded) {
+      setShowOnboard(true);
+    }
+  }, []);
+
+  const handleEnter = () => {
+    const onboarded = localStorage.getItem('mindit_onboarded');
+    if (!onboarded) {
+      setShowOnboard(true);
+    } else {
+      window.location.href = '/feed';
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Animated background orbs */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '15%',
+          left: '10%',
+          width: '400px',
+          height: '400px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(127, 182, 154, 0.08) 0%, transparent 70%)',
+          filter: 'blur(60px)',
+          animation: 'float 8s ease-in-out infinite',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '20%',
+          right: '15%',
+          width: '350px',
+          height: '350px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(155, 142, 196, 0.06) 0%, transparent 70%)',
+          filter: 'blur(60px)',
+          animation: 'float 10s ease-in-out infinite reverse',
+        }}
+      />
+
+      <div style={{ textAlign: 'center', zIndex: 1, maxWidth: '600px' }}>
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: '72px',
+            color: '#e8edf2',
+            fontWeight: 700,
+            marginBottom: '8px',
+            letterSpacing: '-1px',
+          }}
+        >
+          Mindit
+        </motion.h1>
+
+        <motion.div
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          style={{
+            height: '1px',
+            background: 'linear-gradient(90deg, transparent, rgba(127, 182, 154, 0.5), transparent)',
+            margin: '0 auto 24px',
+            width: '200px',
+          }}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
+          style={{
+            fontSize: '20px',
+            color: '#a8b5c4',
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: 300,
+            marginBottom: '8px',
+          }}
+        >
+          Say what you can&apos;t say anywhere else.
+        </motion.p>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.7 }}
+          style={{
+            fontSize: '14px',
+            color: '#6b7a8d',
+            marginBottom: '48px',
+          }}
+        >
+          Anonymous. Safe. Yours.
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.9 }}
+        >
+          <button onClick={handleEnter} className="btn-primary" style={{ fontSize: '16px', padding: '14px 32px' }}>
+            Enter safely →
+          </button>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 1.2 }}
+          style={{
+            display: 'flex',
+            gap: '16px',
+            marginTop: '64px',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
+          {[
+            { label: '300M+ Indians', sub: 'Need mental health support' },
+            { label: 'Judgment-free', sub: 'Express freely' },
+            { label: 'Crisis-aware', sub: 'We watch for signals' },
+          ].map(({ label, sub }) => (
+            <div
+              key={label}
+              style={{
+                background: 'var(--bg-glass)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid var(--border)',
+                borderRadius: '12px',
+                padding: '16px 24px',
+                textAlign: 'center',
+                minWidth: '160px',
+              }}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+              <p style={{ color: '#7fb69a', fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>
+                {label}
+              </p>
+              <p style={{ color: '#6b7a8d', fontSize: '12px' }}>
+                {sub}
+              </p>
+            </div>
+          ))}
+        </motion.div>
+      </div>
     </div>
   );
 }
