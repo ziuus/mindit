@@ -21,15 +21,32 @@ export default function ResonanceButton({
   const [resonated, setResonated] = useState(initialResonated);
   const [animating, setAnimating] = useState(false);
 
-  const handleClick = useCallback(() => {
-    const result = toggleResonance(postId, userId);
-    if (result) {
-      setCount(result.resonanceCount);
-      setResonated(result.resonatedBy.includes(userId));
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = useCallback(async () => {
+    if (loading) return;
+    
+    // Optimistic update
+    const nextResonated = !resonated;
+    setResonated(nextResonated);
+    setCount(prev => nextResonated ? prev + 1 : prev - 1);
+    
+    if (nextResonated) {
       setAnimating(true);
       setTimeout(() => setAnimating(false), 600);
     }
-  }, [postId, userId]);
+
+    setLoading(true);
+    try {
+      await toggleResonance(postId, userId);
+    } catch (err) {
+      // Revert on error
+      setResonated(!nextResonated);
+      setCount(prev => !nextResonated ? prev + 1 : prev - 1);
+    } finally {
+      setLoading(false);
+    }
+  }, [postId, userId, resonated, loading]);
 
   return (
     <button

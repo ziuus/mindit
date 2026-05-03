@@ -18,23 +18,37 @@ export default function FeedPage() {
   const [showComposer, setShowComposer] = useState(false);
   const [user, setUser] = useState<any>(null);
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    setUser(getOrCreateUser());
-    setPosts(getPosts());
+    const load = async () => {
+      setUser(getOrCreateUser());
+      const data = await getPosts();
+      setPosts(data);
+      setLoading(false);
+    };
+    load();
   }, []);
 
   useEffect(() => {
-    setPosts(getPosts({
-      category: selectedCategory,
-      mood: selectedMood,
-    }));
+    const load = async () => {
+      setLoading(true);
+      const data = await getPosts({
+        category: selectedCategory,
+        mood: selectedMood,
+      });
+      setPosts(data);
+      setLoading(false);
+    };
+    load();
   }, [selectedCategory, selectedMood]);
 
-  const handlePostAdded = () => {
-    setPosts(getPosts({
+  const handlePostAdded = async () => {
+    const data = await getPosts({
       category: selectedCategory,
       mood: selectedMood,
-    }));
+    });
+    setPosts(data);
     setShowComposer(false);
   };
 
@@ -106,7 +120,13 @@ export default function FeedPage() {
       </div>
 
       {/* Posts */}
-      {posts.length === 0 ? (
+      {loading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {[1, 2, 3].map(i => (
+            <div key={i} className="glass" style={{ height: '160px', width: '100%', opacity: 0.5 }} />
+          ))}
+        </div>
+      ) : posts.length === 0 ? (
         <div
           style={{
             textAlign: 'center',

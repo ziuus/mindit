@@ -11,10 +11,17 @@ export default function ProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    const u = getOrCreateUser();
-    setUser(u);
-    setPosts(getUserPosts(u.id));
+    const load = async () => {
+      const u = getOrCreateUser();
+      setUser(u);
+      const data = await getUserPosts(u.id);
+      setPosts(data);
+      setLoading(false);
+    };
+    load();
   }, []);
 
   const moodData = posts.reduce((acc: any, post) => {
@@ -166,7 +173,13 @@ export default function ProfilePage() {
         Your Posts
       </h2>
 
-      {posts.length === 0 ? (
+      {loading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {[1, 2].map(i => (
+            <div key={i} className="glass" style={{ height: '120px', width: '100%', opacity: 0.5 }} />
+          ))}
+        </div>
+      ) : posts.length === 0 ? (
         <div style={{
           textAlign: 'center',
           padding: '48px 20px',

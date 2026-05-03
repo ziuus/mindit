@@ -46,7 +46,8 @@ const MOOD_BORDER: Record<string, string> = {
 };
 
 export default function PostCard({ post, currentUserId }: PostCardProps) {
-  const hasResonated = post.resonatedBy.includes(currentUserId);
+  // In Phase 1 with Supabase, we default to false and let ResonanceButton handle local state
+  const hasResonated = false; 
 
   return (
     <div

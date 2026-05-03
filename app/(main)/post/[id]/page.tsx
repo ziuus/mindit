@@ -15,19 +15,40 @@ export default function PostPage() {
   const [hasResonated, setHasResonated] = useState(false);
 
   useEffect(() => {
-    setUser(getOrCreateUser());
-    const found = getPost(params.id as string);
-    if (found) {
-      setPost(found);
-      setHasResonated(found.resonatedBy.includes(getOrCreateUser().id));
-    }
+    const load = async () => {
+      const u = getOrCreateUser();
+      setUser(u);
+      const found = await getPost(params.id as string);
+      if (found) {
+        setPost(found);
+        // Note: For now we'll assume it's false unless we fetch resonance specifically
+        // In a real app, you'd fetch the resonance state for the current user
+        setHasResonated(false); 
+      }
+    };
+    load();
   }, [params.id]);
 
-  const handleResonance = () => {
-    const result = toggleResonance(params.id as string, user.id);
-    if (result) {
-      setPost(result);
-      setHasResonated(result.resonatedBy.includes(user.id));
+  const handleResonance = async () => {
+    if (!user) return;
+    
+    // Optimistic update
+    const nextResonated = !hasResonated;
+    setHasResonated(nextResonated);
+    setPost((prev: any) => ({
+      ...prev,
+      resonanceCount: nextResonated ? prev.resonanceCount + 1 : prev.resonanceCount - 1
+    }));
+
+    try {
+      await toggleResonance(params.id as string, user.id);
+    } catch (err) {
+      // Revert on error
+      setHasResonated(!nextResonated);
+      setPost((prev: any) => ({
+        ...prev,
+        resonanceCount: !nextResonated ? prev.resonanceCount + 1 : prev.resonanceCount - 1
+      }));
     }
   };
 

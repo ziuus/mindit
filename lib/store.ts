@@ -1,3 +1,5 @@
+import { createClient } from '@/utils/supabase/client';
+
 export interface Post {
   id: string;
   pseudonym: string;
@@ -12,108 +14,109 @@ export interface Post {
   userId: string;
 }
 
-const SEED_POSTS: Post[] = [
-  {
-    id: '1',
-    pseudonym: 'QuietMountain42',
-    avatarSeed: 'qm42',
-    content: "I smiled at everyone today at work. No one knows I cried in the bathroom for 10 minutes before that meeting. I don't know how to stop performing happiness.",
-    category: 'vent',
-    mood: 'heavy',
-    resonanceCount: 47,
-    resonatedBy: [],
-    safetyTier: 'safe',
-    createdAt: new Date(Date.now() - 2 * 3600000),
-    userId: 'seed1'
-  },
-  {
-    id: '2',
-    pseudonym: 'DriftingShore19',
-    avatarSeed: 'ds19',
-    content: "I'm the 'strong one' in my family. But sometimes I just want someone to ask me if I'm okay. Just once. Without me having to perform being fine.",
-    category: 'secret',
-    mood: 'numb',
-    resonanceCount: 89,
-    resonatedBy: [],
-    safetyTier: 'watch',
-    createdAt: new Date(Date.now() - 5 * 3600000),
-    userId: 'seed2'
-  },
-  {
-    id: '3',
-    pseudonym: 'VelvetTide33',
-    avatarSeed: 'vt33',
-    content: "Unsent letter to my father: I forgive you. Not because what you did was okay, but because I'm tired of carrying it. I don't know if I'll ever send this.",
-    category: 'unsent-letter',
-    mood: 'hopeful',
-    resonanceCount: 134,
-    resonatedBy: [],
-    safetyTier: 'safe',
-    createdAt: new Date(Date.now() - 12 * 3600000),
-    userId: 'seed3'
-  },
-  {
-    id: '4',
-    pseudonym: 'AmberMist77',
-    avatarSeed: 'am77',
-    content: "I turned down a job abroad to stay close to my parents. Now I resent them for it even though they never asked me to. I feel like a terrible person.",
-    category: 'confession',
-    mood: 'frustrated',
-    resonanceCount: 62,
-    resonatedBy: [],
-    safetyTier: 'safe',
-    createdAt: new Date(Date.now() - 18 * 3600000),
-    userId: 'seed4'
-  },
-  {
-    id: '5',
-    pseudonym: 'SilverMeadow55',
-    avatarSeed: 'sm55',
-    content: "For the first time in 3 years, I cooked a proper meal for myself tonight. It sounds small but it felt like reclaiming something.",
-    category: 'gratitude',
-    mood: 'hopeful',
-    resonanceCount: 201,
-    resonatedBy: [],
-    safetyTier: 'safe',
-    createdAt: new Date(Date.now() - 24 * 3600000),
-    userId: 'seed5'
-  },
-];
+const supabase = createClient();
 
-let posts: Post[] = [...SEED_POSTS];
+export async function getPosts(filter?: { category?: string; mood?: string }): Promise<Post[]> {
+  let query = supabase
+    .from('posts')
+    .select('*')
+    .order('created_at', { ascending: false });
 
-export function getPosts(filter?: { category?: string; mood?: string }): Post[] {
-  let filtered = [...posts].reverse();
   if (filter?.category && filter.category !== 'all') {
-    filtered = filtered.filter(p => p.category === filter.category);
+    query = query.eq('category', filter.category);
   }
   if (filter?.mood && filter.mood !== 'all') {
-    filtered = filtered.filter(p => p.mood === filter.mood);
+    query = query.eq('mood', filter.mood);
   }
-  return filtered;
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('Error fetching posts:', error);
+    return [];
+  }
+
+  return (data || []).map(mapDbPostToPost);
 }
 
-export function getPost(id: string): Post | undefined {
-  return posts.find(p => p.id === id);
+export async function getPost(id: string): Promise<Post | null> {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error || !data) return null;
+  return mapDbPostToPost(data);
 }
 
-export function addPost(post: Post): void {
-  posts = [post, ...posts];
+export async function addPost(post: Omit<Post, 'id' | 'createdAt' | 'resonanceCount' | 'resonatedBy'>): Promise<Post | null> {
+  const { data, error } = await supabase
+    .from('posts')
+    .insert([{
+      user_id: post.userId,
+      pseudonym: post.pseudonym,
+      avatar_seed: post.avatarSeed,
+      content: post.content,
+      category: post.category,
+      mood: post.mood,
+      safety_tier: post.safetyTier,
+    }])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding post:', error);
+    return null;
+  }
+
+  return mapDbPostToPost(data);
 }
 
-export function toggleResonance(postId: string, userId: string): Post | undefined {
-  const post = posts.find(p => p.id === postId);
-  if (!post) return undefined;
-  if (post.resonatedBy.includes(userId)) {
-    post.resonatedBy = post.resonatedBy.filter(id => id !== userId);
-    post.resonanceCount--;
+export async function toggleResonance(postId: string, userId: string): Promise<boolean> {
+  // Check if resonance exists
+  const { data: existing } = await supabase
+    .from('resonances')
+    .select('*')
+    .eq('post_id', postId)
+    .eq('user_id', userId)
+    .single();
+
+  if (existing) {
+    // Remove resonance
+    await supabase.from('resonances').delete().eq('id', existing.id);
+    await supabase.rpc('decrement_resonance', { post_id: postId });
+    return false;
   } else {
-    post.resonatedBy.push(userId);
-    post.resonanceCount++;
+    // Add resonance
+    await supabase.from('resonances').insert([{ post_id: postId, user_id: userId }]);
+    await supabase.rpc('increment_resonance', { post_id: postId });
+    return true;
   }
-  return post;
 }
 
-export function getUserPosts(userId: string): Post[] {
-  return posts.filter(p => p.userId === userId).reverse();
+export async function getUserPosts(userId: string): Promise<Post[]> {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) return [];
+  return (data || []).map(mapDbPostToPost);
+}
+
+function mapDbPostToPost(dbPost: any): Post {
+  return {
+    id: dbPost.id,
+    userId: dbPost.user_id,
+    pseudonym: dbPost.pseudonym,
+    avatarSeed: dbPost.avatar_seed,
+    content: dbPost.content,
+    category: dbPost.category,
+    mood: dbPost.mood,
+    resonanceCount: dbPost.resonance_count || 0,
+    resonatedBy: [],
+    safetyTier: dbPost.safety_tier,
+    createdAt: new Date(dbPost.created_at),
+  };
 }

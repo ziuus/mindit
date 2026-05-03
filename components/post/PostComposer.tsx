@@ -36,8 +36,8 @@ export default function PostComposer({ onClose, fullPage = false }: PostComposer
   const [selectedMood, setSelectedMood] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showCrisisBanner, setShowCrisisBanner] = useState(false);
-  const [showSafetyModal, setShowSafetyModal] = useState(false);
   const [pendingPost, setPendingPost] = useState<any>(null);
+  const [isSending, setIsSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -46,23 +46,19 @@ export default function PostComposer({ onClose, fullPage = false }: PostComposer
     }
   }, []);
 
-  const handleSubmit = () => {
-    if (!content.trim() || !selectedMood || !selectedCategory) return;
+  const handleSubmit = async () => {
+    if (!content.trim() || !selectedMood || !selectedCategory || isSending) return;
 
     const safety = analyzeSafety(content);
     const user = getOrCreateUser();
 
     const post = {
-      id: crypto.randomUUID(),
       pseudonym: user.pseudonym,
       avatarSeed: user.avatarSeed,
       content: content.trim(),
       category: selectedCategory as any,
       mood: selectedMood as any,
-      resonanceCount: 0,
-      resonatedBy: [],
       safetyTier: safety.tier,
-      createdAt: new Date(),
       userId: user.id,
     };
 
@@ -72,7 +68,8 @@ export default function PostComposer({ onClose, fullPage = false }: PostComposer
       return;
     }
 
-    addPost(post);
+    setIsSending(true);
+    await addPost(post);
 
     if (safety.tier === 'watch') {
       setShowCrisisBanner(true);
@@ -81,6 +78,7 @@ export default function PostComposer({ onClose, fullPage = false }: PostComposer
     setContent('');
     setSelectedMood('');
     setSelectedCategory('');
+    setIsSending(false);
 
     if (fullPage) {
       router.push('/feed');
@@ -89,14 +87,16 @@ export default function PostComposer({ onClose, fullPage = false }: PostComposer
     }
   };
 
-  const handleSafetyProceed = () => {
+  const handleSafetyProceed = async () => {
     if (pendingPost) {
-      addPost(pendingPost);
+      setIsSending(true);
+      await addPost(pendingPost);
       setPendingPost(null);
       setContent('');
       setSelectedMood('');
       setSelectedCategory('');
       setShowSafetyModal(false);
+      setIsSending(false);
       if (fullPage) {
         router.push('/feed');
       } else if (onClose) {
@@ -256,16 +256,16 @@ export default function PostComposer({ onClose, fullPage = false }: PostComposer
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <button
               onClick={handleSubmit}
-              disabled={!content.trim() || !selectedMood || !selectedCategory}
+              disabled={!content.trim() || !selectedMood || !selectedCategory || isSending}
               className="btn-primary"
               style={{
                 flex: 1,
-                opacity: !content.trim() || !selectedMood || !selectedCategory ? 0.5 : 1,
-                cursor: !content.trim() || !selectedMood || !selectedCategory ? 'not-allowed' : 'pointer',
+                opacity: !content.trim() || !selectedMood || !selectedCategory || isSending ? 0.5 : 1,
+                cursor: !content.trim() || !selectedMood || !selectedCategory || isSending ? 'not-allowed' : 'pointer',
               }}
             >
               <Heart size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-              Share this
+              {isSending ? 'Sending...' : 'Share this'}
             </button>
           </div>
         </div>
