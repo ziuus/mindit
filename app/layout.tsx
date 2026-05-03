@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body style={{ background: 'var(--bg-primary)', minHeight: '100vh' }}>
+      <body style={{ background: 'var(--bg-primary)', minHeight: '100vh' }} suppressHydrationWarning>
         <OnboardFlow />
         <Navbar />
         <main style={{ paddingTop: '80px', paddingBottom: '80px' }}>

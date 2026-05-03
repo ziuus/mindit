@@ -36,6 +36,7 @@ export default function PostComposer({ onClose, fullPage = false }: PostComposer
   const [selectedMood, setSelectedMood] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showCrisisBanner, setShowCrisisBanner] = useState(false);
+  const [showSafetyModal, setShowSafetyModal] = useState(false);
   const [pendingPost, setPendingPost] = useState<any>(null);
   const [isSending, setIsSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
