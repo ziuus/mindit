@@ -13,14 +13,6 @@ const PROMPTS = [
   "What does your heart need right now?",
 ];
 
-const AI_RESPONSES = [
-  "Thank you for sharing that. What do you think is the first small step toward what you need?",
-  "I hear you. Sometimes just naming what we feel creates space for healing. Want to explore that more?",
-  "That sounds really heavy. What would it look like to be gentle with yourself about this?",
-  "Your feelings are valid. When did you first start feeling this way?",
-  "I'm glad you expressed this. What would offer you comfort right now?",
-];
-
 interface Reflection {
   id: string;
   content: string;
@@ -33,6 +25,7 @@ export default function ReflectPage() {
   const [content, setContent] = useState('');
   const [reflections, setReflections] = useState<Reflection[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -57,13 +50,32 @@ export default function ReflectPage() {
     }
   }, [submitted]);
 
-  const handleSubmit = () => {
-    if (!content.trim()) return;
+  const handleSubmit = async () => {
+    if (!content.trim() || isAnalyzing) return;
+
+    setIsAnalyzing(true);
+    let aiResponse = "I'm listening. Take your time.";
+    
+    try {
+      const res = await fetch('/api/reflect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: content.trim() }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        aiResponse = data.response;
+      }
+    } catch (e) {
+      console.error('Failed to fetch AI response', e);
+    }
+
+    setIsAnalyzing(false);
 
     const reflection: Reflection = {
       id: crypto.randomUUID(),
       content: content.trim(),
-      aiResponse: AI_RESPONSES[Math.floor(Math.random() * AI_RESPONSES.length)],
+      aiResponse,
       createdAt: new Date(),
     };
 
@@ -142,15 +154,27 @@ export default function ReflectPage() {
           </span>
           <button
             onClick={handleSubmit}
-            disabled={!content.trim()}
+            disabled={!content.trim() || isAnalyzing}
             className="btn-primary"
             style={{
-              opacity: !content.trim() ? 0.5 : 1,
-              cursor: !content.trim() ? 'not-allowed' : 'pointer',
+              opacity: !content.trim() || isAnalyzing ? 0.5 : 1,
+              cursor: !content.trim() || isAnalyzing ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
             }}
           >
-            <Send size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-            Reflect
+            {isAnalyzing ? (
+              <>
+                <span style={{ width: '14px', height: '14px', border: '2px solid rgba(10,15,20,0.3)', borderTop: '2px solid #0a0f14', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
+                Reflecting...
+              </>
+            ) : (
+              <>
+                <Send size={14} />
+                Reflect
+              </>
+            )}
           </button>
         </div>
 
