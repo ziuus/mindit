@@ -84,6 +84,21 @@ export default function Navbar() {
         >
           Reflect
         </Link>
+        <Link
+          href="/pulse"
+          style={{
+            color: '#a8b5c4',
+            textDecoration: 'none',
+            fontSize: '14px',
+            padding: '6px 14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+          }}
+        >
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#7fb69a', display: 'inline-block', boxShadow: '0 0 6px rgba(127,182,154,0.6)', animation: 'breathe 2s ease-in-out infinite' }} />
+          Pulse
+        </Link>
         {user && (
           <Link
             href="/profile"

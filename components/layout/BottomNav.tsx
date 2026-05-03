@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, PenLine, Archive, Brain } from 'lucide-react';
+import { Home, PenLine, Archive, Brain, Activity } from 'lucide-react';
 
 const tabs = [
   { href: '/feed', icon: Home, label: 'Home' },
   { href: '/compose', icon: PenLine, label: 'Write' },
+  { href: '/pulse', icon: Activity, label: 'Pulse' },
   { href: '/profile', icon: Archive, label: 'Vault' },
   { href: '/reflect', icon: Brain, label: 'Reflect' },
 ];
@@ -26,7 +27,7 @@ export default function BottomNav() {
         backdropFilter: 'blur(20px)',
         borderTop: '1px solid rgba(255,255,255,0.07)',
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
+        gridTemplateColumns: 'repeat(5, 1fr)',
         padding: '8px 0 max(8px, env(safe-area-inset-bottom))',
       }}
       className="md:hidden"
