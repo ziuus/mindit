@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body style={{ background: 'var(--bg-primary)', minHeight: '100vh' }}>
         <OnboardFlow />
         <Navbar />
